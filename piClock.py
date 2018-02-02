@@ -43,7 +43,7 @@ BLACK = (0, 0, 0)
 def increase_hour():
     global red_hour
     global var_hour
-    red_hour = red_hour + 1
+    red_hour = int(var_hour.get()) + 1
     if red_hour > 12:
         red_hour = 1
     var_hour.set(red_hour)
@@ -51,7 +51,7 @@ def increase_hour():
 def decrease_hour():
     global red_hour
     global var_hour
-    red_hour = red_hour - 1
+    red_hour = int(var_hour.get()) - 1
     if red_hour < 1:
         red_hour = 12
     var_hour.set(red_hour)
@@ -59,7 +59,7 @@ def decrease_hour():
 def increase_minute():
     global red_minute
     global var_minute
-    red_minute = red_minute + 1
+    red_minute = int(var_minute.get()) + 1
     if red_minute > 59:
         red_minute = 0
     var_minute.set(red_minute)
@@ -67,7 +67,7 @@ def increase_minute():
 def decrease_minute():
     global red_minute
     global var_minute
-    red_minute = red_minute - 1
+    red_minute = int(var_minute.get()) - 1
     if red_minute < 0:
         red_minute = 59
     var_minute.set(red_minute)
@@ -122,12 +122,10 @@ def main():
     define_window()    
 
     #var_hour = StringVar()
-    #var_minute = StringVar()
-
+    #var_minute = StringVar()    
     
-    
-    redHour = 3
-    redMinute = 45
+    #redHour = 3
+    #redMinute = 45
     last_ticks = pygame.time.get_ticks()
     
     while 1:
@@ -145,6 +143,8 @@ def main():
                 if keys[K_LCTRL]:
                     root.mainloop()
                     print "after main loop"
+                    print red_hour
+                    print red_minute
                     #root = Tk()
                     #define_window()
                 
@@ -168,9 +168,9 @@ def main():
 
         color = MATRIX_GREEN
         
-        if hour < redHour:
+        if hour < red_hour:
             color = RED
-        elif hour == redHour and minute < redMinute:
+        elif hour == red_hour and minute < red_minute:
             color = RED
         
         text = TEXT_FONT.render(str(displayTime), 1, color)
