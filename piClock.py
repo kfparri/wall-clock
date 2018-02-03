@@ -186,7 +186,7 @@ def main():
     CLOSE = pygame.image.load("close.png")
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
-    pygame.mouse.set_visible(False)
+    #pygame.mouse.set_visible(False)
     #pygame.display.set_caption('Clock')
 
     background = pygame.Surface(screen.get_size())
