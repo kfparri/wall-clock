@@ -19,7 +19,7 @@ red_minute = 0
 show_settings = False
 
 # constants
-SCREEN_WIDTH = 640
+SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 480
 
 # colors
@@ -185,8 +185,9 @@ def main():
     DOWN = pygame.image.load("down.png")
     CLOSE = pygame.image.load("close.png")
 
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption('Clock')
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+    pygame.mouse.set_visible(False)
+    #pygame.display.set_caption('Clock')
 
     background = pygame.Surface(screen.get_size())
     background = background.convert()
