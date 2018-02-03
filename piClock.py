@@ -27,38 +27,36 @@ RED = (255, 0, 0)
 MATRIX_GREEN = (0, 255, 21)
 BLACK = (0, 0, 0)
 
+up_hour_rect = pygame.Rect(0,0,0,0)
+up_minute_rect = pygame.Rect(0,0,0,0)
+down_hour_rect = pygame.Rect(0,0,0,0)
+down_minute_rect = pygame.Rect(0,0,0,0)
+close_rect = pygame.Rect(0,0,0,0)
+
 # define some functions for the GUI frame to use
 def increase_hour():
     global red_hour
-    global var_hour
-    red_hour = int(var_hour.get()) + 1
+    red_hour = red_hour + 1
     if red_hour > 12:
         red_hour = 1
-    var_hour.set(red_hour)
 
 def decrease_hour():
     global red_hour
-    global var_hour
-    red_hour = int(var_hour.get()) - 1
+    red_hour = red_hour - 1
     if red_hour < 1:
         red_hour = 12
-    var_hour.set(red_hour)
 
 def increase_minute():
     global red_minute
-    global var_minute
-    red_minute = int(var_minute.get()) + 1
+    red_minute = red_minute + 1
     if red_minute > 59:
         red_minute = 0
-    var_minute.set(red_minute)
 
 def decrease_minute():
     global red_minute
-    global var_minute
-    red_minute = int(var_minute.get()) - 1
+    red_minute = red_minute - 1
     if red_minute < 0:
         red_minute = 59
-    var_minute.set(red_minute)
 
 def displayClock(display_font, screen, background, settings, blink):    
     time = datetime.datetime.now()
@@ -109,25 +107,72 @@ def displayClock(display_font, screen, background, settings, blink):
 
     pygame.display.flip()
 
-def display_settings(background, screen, display_font):
+def display_settings(background, screen, display_font, up, down, close):
+    global up_hour_rect
+    global up_minute_rect
+    global down_hour_rect
+    global down_minute_rect
+    global close_rect
+    # first, build our text objects, these will be the focal point of all the other objects on the screen
     color = MATRIX_GREEN
-
-    up = pygame.image.load("up.png")
-    down = pygame.image.load("down.png")
-
     hour_text = display_font.render(str(red_hour), 1, color)
-    hour_loc = (100, 100)
-
     minute_text = display_font.render(str(red_minute), 1, color)
-    minute_loc = (400, 100)
+
+    # Define some constants for positions on the screen
+    HOUR_POS_X = 100
+    TIME_POS_Y = 150
+    MINUTE_POS_X = HOUR_POS_X + 300 # 350
+    UP_HOUR_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up.get_width() / 2)
+    UP_BUTTON_POS_Y = TIME_POS_Y - up.get_height() # - 10
+    BUTTON_MINUTE_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
+    
+    DOWN_HOUR_POS_X = UP_HOUR_POS_X 
+    DOWN_BUTTON_POS_Y = TIME_POS_Y + hour_text.get_height() - 20
+
+    CLOSE_BUTTON_X = SCREEN_WIDTH - close.get_width()
+    CLOSE_BUTTON_Y = SCREEN_HEIGHT - close.get_height()
+
+    #DOWN_MINUTE_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
+
+    hour_loc = (HOUR_POS_X, TIME_POS_Y) # (100, 100)
+    
+    minute_loc = (MINUTE_POS_X, TIME_POS_Y) # (400, 100)
+
+    # Now setup the images
+    up_hour_rect = up.get_rect()
+    up_hour_rect.x = UP_HOUR_POS_X #100 + (hour_text.get_width() / 2) - (up.get_width() / 2)
+    up_hour_rect.y = UP_BUTTON_POS_Y # 40
+
+    up_minute_rect = up.get_rect()
+    up_minute_rect.x = BUTTON_MINUTE_POS_X # 400 + (minute_text.get_width() / 2) - (up.get_width() / 2)
+    up_minute_rect.y = UP_BUTTON_POS_Y # 40
+
+    down_hour_rect = down.get_rect()
+    down_hour_rect.x = DOWN_HOUR_POS_X
+    down_hour_rect.y = DOWN_BUTTON_POS_Y
+
+    down_minute_rect = down.get_rect()
+    down_minute_rect.x = BUTTON_MINUTE_POS_X
+    down_minute_rect.y = DOWN_BUTTON_POS_Y
+
+    close_rect = close.get_rect()
+    close_rect.x = CLOSE_BUTTON_X
+    close_rect.y = CLOSE_BUTTON_Y
+
+    #down = pygame.image.load("down.png")
+    #close = pygame.image.load("close.png")
 
     screen.blit(background, (0,0))
 
+    screen.blit(up, up_hour_rect)
+    screen.blit(up, up_minute_rect)
+    screen.blit(down, down_hour_rect)
+    screen.blit(down, down_minute_rect)
+    screen.blit(close, close_rect)
     screen.blit(hour_text, hour_loc)
     screen.blit(minute_text, minute_loc)
 
     pygame.display.flip()
-
 
 def main():
     pygame.init()
@@ -136,6 +181,9 @@ def main():
     TEXT_FONT = pygame.font.Font('freesansbold.ttf', 200)
 
     IMG = pygame.image.load("settings.png")
+    UP = pygame.image.load("up.png")
+    DOWN = pygame.image.load("down.png")
+    CLOSE = pygame.image.load("close.png")
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Clock')
@@ -173,14 +221,25 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
                 if IMG.get_rect().collidepoint(x,y):
-                    print "button Clicked"
+                    print "settings button Clicked"
                     show_settings = True
+                if show_settings:
+                    if up_hour_rect.collidepoint(x,y):
+                        increase_hour()
+                    if down_hour_rect.collidepoint(x,y):
+                        decrease_hour()
+                    if up_minute_rect.collidepoint(x,y):
+                        increase_minute()
+                    if down_minute_rect.collidepoint(x,y):
+                        decrease_minute()
+                    if close_rect.collidepoint(x,y):
+                        show_settings = False          
 
         # if I click the button, the screen will stop updating
         if not show_settings:        
             displayClock(TEXT_FONT, screen, background, IMG, blink)
         else:
-            display_settings(background, screen, TEXT_FONT)
+            display_settings(background, screen, TEXT_FONT, UP, DOWN, CLOSE)
 
         if firstRun:
             firstRun = False
