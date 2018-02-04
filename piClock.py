@@ -5,7 +5,7 @@
 # Description:  An application to display a clock with different colors for my daughters room.
 #
 # Change log:
-#       12.29.2017	Initial Release
+#       2/3/2018	Initial Release
 #------------------------------------------------------------------------------------------------------
 
 
@@ -17,6 +17,14 @@ from pygame.locals import *
 red_hour = 6
 red_minute = 0
 show_settings = False
+time = datetime.datetime.now()
+
+# Making these rectangles global so config "screens" can be updated in a function
+up_hour_rect = pygame.Rect(0,0,0,0)
+up_minute_rect = pygame.Rect(0,0,0,0)
+down_hour_rect = pygame.Rect(0,0,0,0)
+down_minute_rect = pygame.Rect(0,0,0,0)
+close_rect = pygame.Rect(0,0,0,0)
 
 # constants
 SCREEN_WIDTH = 800
@@ -27,13 +35,7 @@ RED = (255, 0, 0)
 MATRIX_GREEN = (0, 255, 21)
 BLACK = (0, 0, 0)
 
-up_hour_rect = pygame.Rect(0,0,0,0)
-up_minute_rect = pygame.Rect(0,0,0,0)
-down_hour_rect = pygame.Rect(0,0,0,0)
-down_minute_rect = pygame.Rect(0,0,0,0)
-close_rect = pygame.Rect(0,0,0,0)
-
-# define some functions for the GUI frame to use
+# define some functions for changing the time the clock will be red
 def increase_hour():
     global red_hour
     red_hour = red_hour + 1
@@ -59,9 +61,10 @@ def decrease_minute():
         red_minute = 59
 
 def displayClock(display_font, screen, background, settings, blink):    
-    time = datetime.datetime.now()
+    global time
     newtime = datetime.datetime.now()
-        
+    
+    # if the time has changed, update the display values
     if time.minute != newtime.minute:
         if newtime.hour > 12:
             hour = newtime.hour - 12
@@ -69,6 +72,7 @@ def displayClock(display_font, screen, background, settings, blink):
             hour = newtime.hour
 
         minute = newtime.minute
+        time = newtime
     else:
         if time.hour > 12:
             hour = time.hour - 12
@@ -113,6 +117,7 @@ def display_settings(background, screen, display_font, up, down, close):
     global down_hour_rect
     global down_minute_rect
     global close_rect
+
     # first, build our text objects, these will be the focal point of all the other objects on the screen
     color = MATRIX_GREEN
     hour_text = display_font.render(str(red_hour), 1, color)
@@ -121,9 +126,9 @@ def display_settings(background, screen, display_font, up, down, close):
     # Define some constants for positions on the screen
     HOUR_POS_X = 100
     TIME_POS_Y = 150
-    MINUTE_POS_X = HOUR_POS_X + 300 # 350
+    MINUTE_POS_X = HOUR_POS_X + 300
     UP_HOUR_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up.get_width() / 2)
-    UP_BUTTON_POS_Y = TIME_POS_Y - up.get_height() # - 10
+    UP_BUTTON_POS_Y = TIME_POS_Y - up.get_height() 
     BUTTON_MINUTE_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
     
     DOWN_HOUR_POS_X = UP_HOUR_POS_X 
@@ -132,20 +137,18 @@ def display_settings(background, screen, display_font, up, down, close):
     CLOSE_BUTTON_X = SCREEN_WIDTH - close.get_width()
     CLOSE_BUTTON_Y = SCREEN_HEIGHT - close.get_height()
 
-    #DOWN_MINUTE_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
-
-    hour_loc = (HOUR_POS_X, TIME_POS_Y) # (100, 100)
+    hour_loc = (HOUR_POS_X, TIME_POS_Y) 
     
-    minute_loc = (MINUTE_POS_X, TIME_POS_Y) # (400, 100)
+    minute_loc = (MINUTE_POS_X, TIME_POS_Y)
 
     # Now setup the images
     up_hour_rect = up.get_rect()
-    up_hour_rect.x = UP_HOUR_POS_X #100 + (hour_text.get_width() / 2) - (up.get_width() / 2)
-    up_hour_rect.y = UP_BUTTON_POS_Y # 40
+    up_hour_rect.x = UP_HOUR_POS_X 
+    up_hour_rect.y = UP_BUTTON_POS_Y 
 
     up_minute_rect = up.get_rect()
-    up_minute_rect.x = BUTTON_MINUTE_POS_X # 400 + (minute_text.get_width() / 2) - (up.get_width() / 2)
-    up_minute_rect.y = UP_BUTTON_POS_Y # 40
+    up_minute_rect.x = BUTTON_MINUTE_POS_X 
+    up_minute_rect.y = UP_BUTTON_POS_Y 
 
     down_hour_rect = down.get_rect()
     down_hour_rect.x = DOWN_HOUR_POS_X
@@ -158,9 +161,6 @@ def display_settings(background, screen, display_font, up, down, close):
     close_rect = close.get_rect()
     close_rect.x = CLOSE_BUTTON_X
     close_rect.y = CLOSE_BUTTON_Y
-
-    #down = pygame.image.load("down.png")
-    #close = pygame.image.load("close.png")
 
     screen.blit(background, (0,0))
 
@@ -195,7 +195,6 @@ def main():
     screen.blit(background, (0,0))
     pygame.display.update()
     
-    #time = datetime.datetime.now()
     firstRun = True
     blink = False    
     show_settings = False
@@ -214,15 +213,9 @@ def main():
                 if keys[K_ESCAPE]:
                     pygame.quit()
                     sys.exit()
-                if keys[K_LCTRL]:
-                    root.mainloop()
-                    print "after main loop"
-                    print red_hour
-                    print red_minute
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
                 if IMG.get_rect().collidepoint(x,y):
-                    print "settings button Clicked"
                     show_settings = True
                 if show_settings:
                     if up_hour_rect.collidepoint(x,y):
