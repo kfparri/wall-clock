@@ -14,9 +14,20 @@ import datetime, pygame, sys, datetime
 from pygame.locals import *
 
 # global variables
+
+# The "Target Time"  While the current time is less than this time (relative, since we are using a simple 12 hour time)
+#  the clock will be red (not time to wake up)
+
+# target hour
 red_hour = 6
+
+# target minute
 red_minute = 0
+
+# this flag tells the main loop whether to display the clock or the settings
 show_settings = False
+
+# set the current time, this is used to make the drawing more efficient
 time = datetime.datetime.now()
 
 # Making these rectangles global so config "screens" can be updated in a function
@@ -30,38 +41,47 @@ close_rect = pygame.Rect(0,0,0,0)
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 480
 
-# colors
+# colors that are used in this program
 RED = (255, 0, 0)
 MATRIX_GREEN = (0, 255, 21)
 BLACK = (0, 0, 0)
 
 # define some functions for changing the time the clock will be red
+
+# increase the target hour by one, if it is greater than 12 set it to 1
 def increase_hour():
     global red_hour
     red_hour = red_hour + 1
     if red_hour > 12:
         red_hour = 1
 
+# decrease the target hour by one, if the hours is less than 1 set it to 12
 def decrease_hour():
     global red_hour
     red_hour = red_hour - 1
     if red_hour < 1:
         red_hour = 12
 
+# increase the target minute by one, if it is more than 59 reset it to 0
 def increase_minute():
     global red_minute
     red_minute = red_minute + 1
     if red_minute > 59:
         red_minute = 0
 
+# decrease the target minute by one, if it is less than 0 set it to 59
 def decrease_minute():
     global red_minute
     red_minute = red_minute - 1
     if red_minute < 0:
         red_minute = 59
 
-def displayClock(display_font, screen, background, settings, blink):    
+# this function handles the logic of displaying the clock to the screen
+def displayClock(display_font, screen, background, settings, blink):   
+    # get the global time variable 
     global time
+
+    # create a new time variable so we can compare the current time vs the last updated time
     newtime = datetime.datetime.now()
     
     # if the time has changed, update the display values
@@ -79,39 +99,54 @@ def displayClock(display_font, screen, background, settings, blink):
         else:
             hour = time.hour
         minute = time.minute
-        
+    
+    # create the text that will be drawn to the screen
     displayTime = str(hour).zfill(2) + ":" + str(minute).zfill(2)
 
+    # set the default color for the clock, in this case, green
     color = MATRIX_GREEN
     
+    # if the current time is less than the target time, set the color to red
     if hour < red_hour:
         color = RED
     elif hour == red_hour and minute < red_minute:
         color = RED
     
+    # create the text surface that we will blit to the screen
     text = display_font.render(str(displayTime), 1, color)
+
+    # create a surface for the colon so we can use it to blank it out on the blink
     colonText = display_font.render(":", 1, MATRIX_GREEN)
 
+    # blit the background to clear the screen
     screen.blit(background, (0,0))
     
+    # if we are blinking the colon, draw a rectangle over top of the colon in the text surface 
     if blink:
         pygame.draw.rect(text, BLACK,
                         (text.get_width() / 2 - colonText.get_width() / 2,
                         text.get_height() /2 - colonText.get_height() / 2,
                         colonText.get_width(), colonText.get_height()))
 
+    # blit the text surface to the screen
     screen.blit(text, ((SCREEN_WIDTH / 2) - text.get_width() / 2,
                         (SCREEN_HEIGHT / 2) - text.get_height() / 2))
     
+    # get the rectangle for the settings button
     imgRect = settings.get_rect()
     imgRect.x = 0
     imgRect.y = 0
 
+    # blit the settings button to the screen
     screen.blit(settings, imgRect)
 
+    # flip will flip the buffer to display all the images that we've blited
     pygame.display.flip()
 
+# This function will handle all the code to display the settings screen.
 def display_settings(background, screen, display_font, up, down, close):
+    # get the global rectangles.  These are global because the main loop has to have access to them
+    #  to see if someone has clicked the buttons
     global up_hour_rect
     global up_minute_rect
     global down_hour_rect
@@ -142,6 +177,7 @@ def display_settings(background, screen, display_font, up, down, close):
     minute_loc = (MINUTE_POS_X, TIME_POS_Y)
 
     # Now setup the images
+    # up and down arrows
     up_hour_rect = up.get_rect()
     up_hour_rect.x = UP_HOUR_POS_X 
     up_hour_rect.y = UP_BUTTON_POS_Y 
@@ -158,12 +194,15 @@ def display_settings(background, screen, display_font, up, down, close):
     down_minute_rect.x = BUTTON_MINUTE_POS_X
     down_minute_rect.y = DOWN_BUTTON_POS_Y
 
+    # close button image
     close_rect = close.get_rect()
     close_rect.x = CLOSE_BUTTON_X
     close_rect.y = CLOSE_BUTTON_Y
 
+    # first blank the screen to make sure we don't have any stray artifacts
     screen.blit(background, (0,0))
 
+    # blit all the buttons and the text
     screen.blit(up, up_hour_rect)
     screen.blit(up, up_minute_rect)
     screen.blit(down, down_hour_rect)
@@ -172,51 +211,70 @@ def display_settings(background, screen, display_font, up, down, close):
     screen.blit(hour_text, hour_loc)
     screen.blit(minute_text, minute_loc)
 
+    # flip the buffers to display the screen
     pygame.display.flip()
 
 def main():
     pygame.init()
 
-    # text
+    # load the text font
     TEXT_FONT = pygame.font.Font('freesansbold.ttf', 200)
 
+    # load the images into constants for use in the functions
     IMG = pygame.image.load("settings.png")
     UP = pygame.image.load("up.png")
     DOWN = pygame.image.load("down.png")
     CLOSE = pygame.image.load("close.png")
 
+    # create the display with the defined size and make it full screen
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
-    #pygame.mouse.set_visible(False)
-    #pygame.display.set_caption('Clock')
 
+    # create the surface for the background and create it
     background = pygame.Surface(screen.get_size())
     background = background.convert()
 
+    # blit the background to clear it out
     screen.blit(background, (0,0))
+
+    # update the display
     pygame.display.update()
     
-    firstRun = True
+    # set the start state for the blink flag
     blink = False    
+
+    # we don't want to start the clock in the settings window
     show_settings = False
 
+    # get the current clock ticks
     last_ticks = pygame.time.get_ticks()
     
+    # main loop
     while 1:
+        # event loop
         for event in pygame.event.get():
+            # check for quit events (close windows)
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
                 return
+            # if the user presses the escape key, we will also exit
             elif event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 
                 if keys[K_ESCAPE]:
                     pygame.quit()
                     sys.exit()
+            # the other event we are looking for is mouse clicks
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = event.pos
+                # get the mouse position x and y values
+                x, y = event.pos                
+
+                # if the user clicked the settings button, set show settings to true, this will update the screen to 
+                #  show the settings window
                 if IMG.get_rect().collidepoint(x,y):
                     show_settings = True
+                
+                # only check these events if we are on the settings screen (these buttons don't exist on the main window)
                 if show_settings:
                     if up_hour_rect.collidepoint(x,y):
                         increase_hour()
@@ -235,11 +293,10 @@ def main():
         else:
             display_settings(background, screen, TEXT_FONT, UP, DOWN, CLOSE)
 
-        if firstRun:
-            firstRun = False
-
+        # using the clock ticks to determine how fast to blink the colon
         if pygame.time.get_ticks() - last_ticks > 700:
             blink = not blink
             last_ticks = pygame.time.get_ticks()
 
+# main function
 if __name__ == '__main__': main()
