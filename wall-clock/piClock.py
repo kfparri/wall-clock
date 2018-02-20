@@ -52,7 +52,7 @@ BLACK = (0, 0, 0)
 def increase_hour():
     global red_hour
     red_hour = red_hour + 1
-    if red_hour > 12:
+    if red_hour > 23:
         red_hour = 1
 
 # decrease the target hour by one, if the hours is less than 1 set it to 12
@@ -60,7 +60,7 @@ def decrease_hour():
     global red_hour
     red_hour = red_hour - 1
     if red_hour < 1:
-        red_hour = 12
+        red_hour = 23
 
 # increase the target minute by one, if it is more than 59 reset it to 0
 def increase_minute():
@@ -83,25 +83,25 @@ def displayClock(display_font, screen, background, settings, blink):
 
     # create a new time variable so we can compare the current time vs the last updated time
     newtime = datetime.datetime.now()
-    
+    pm = False
+
     # if the time has changed, update the display values
     if time.minute != newtime.minute:
-        if newtime.hour > 12:
-            hour = newtime.hour - 12
-        else:
-            hour = newtime.hour
-
+        hour = newtime.hour
         minute = newtime.minute
-        time = newtime
     else:
-        if time.hour > 12:
-            hour = time.hour - 12
-        else:
-            hour = time.hour
+        hour = time.hour
         minute = time.minute
     
+    display_hour = 0
+
+    if hour > 12:
+        display_hour = hour - 12
+    else:
+        display_hour = hour
+        
     # create the text that will be drawn to the screen
-    displayTime = str(hour).zfill(2) + ":" + str(minute).zfill(2)
+    displayTime = str(display_hour).zfill(2) + ":" + str(minute).zfill(2)
 
     # set the default color for the clock, in this case, green
     color = MATRIX_GREEN
@@ -129,7 +129,7 @@ def displayClock(display_font, screen, background, settings, blink):
                         colonText.get_width(), colonText.get_height()))
 
     # blit the text surface to the screen
-    screen.blit(text, ((SCREEN_WIDTH / 2) - text.get_width() / 2,
+    resultRect = screen.blit(text, ((SCREEN_WIDTH / 2) - text.get_width() / 2,
                         (SCREEN_HEIGHT / 2) - text.get_height() / 2))
     
     # get the rectangle for the settings button
@@ -139,6 +139,9 @@ def displayClock(display_font, screen, background, settings, blink):
 
     # blit the settings button to the screen
     screen.blit(settings, imgRect)
+
+    # if the current time is in the PM display the 'pm dot'
+    pygame.draw.circle(screen, color, (resultRect.right + 10, resultRect.bottom - 50), 10)
 
     # flip will flip the buffer to display all the images that we've blited
     pygame.display.flip()
@@ -161,7 +164,7 @@ def display_settings(background, screen, display_font, up, down, close):
     # Define some constants for positions on the screen
     HOUR_POS_X = 100
     TIME_POS_Y = 150
-    MINUTE_POS_X = HOUR_POS_X + 300
+    MINUTE_POS_X = 400 #HOUR_POS_X + 300
     UP_HOUR_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up.get_width() / 2)
     UP_BUTTON_POS_Y = TIME_POS_Y - up.get_height() 
     BUTTON_MINUTE_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
@@ -228,7 +231,9 @@ def main():
 
     # create the display with the defined size and make it full screen
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
-
+    # this is for developing locally on my laptop.
+    #screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    
     # create the surface for the background and create it
     background = pygame.Surface(screen.get_size())
     background = background.convert()
