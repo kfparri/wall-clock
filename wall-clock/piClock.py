@@ -107,7 +107,7 @@ def displayClock(display_font, screen, background, settings, blink):
     color = MATRIX_GREEN
     
     # if the current time is less than the target time, set the color to red
-    if hour < red_hour:
+    if hour < red_hour or (red_hour < 12 and hour >= 12):
         color = RED
     elif hour == red_hour and minute < red_minute:
         color = RED
