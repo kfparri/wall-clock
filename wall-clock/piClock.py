@@ -141,7 +141,8 @@ def displayClock(display_font, screen, background, settings, blink):
     screen.blit(settings, imgRect)
 
     # if the current time is in the PM display the 'pm dot'
-    pygame.draw.circle(screen, color, (resultRect.right + 10, resultRect.bottom - 50), 10)
+    if hour > 12:
+        pygame.draw.circle(screen, color, (resultRect.right + 10, resultRect.bottom - 50), 10)
 
     # flip will flip the buffer to display all the images that we've blited
     pygame.display.flip()
