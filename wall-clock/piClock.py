@@ -10,8 +10,7 @@
 
 
 # imports
-import datetime, pygame, sys, datetime
-import time as SysTime
+import datetime, pygame, sys, datetime, time
 from pygame.locals import *
 
 # global variables
@@ -29,7 +28,7 @@ red_minute = 0
 show_settings = False
 
 # set the current time, this is used to make the drawing more efficient
-time = datetime.datetime.now()
+current_time = datetime.datetime.now()
 
 # Making these rectangles global so config "screens" can be updated in a function
 up_hour_rect = pygame.Rect(0,0,0,0)
@@ -80,19 +79,19 @@ def decrease_minute():
 # this function handles the logic of displaying the clock to the screen
 def displayClock(display_font, screen, background, settings, blink):   
     # get the global time variable 
-    global time
+    global current_time
 
     # create a new time variable so we can compare the current time vs the last updated time
     newtime = datetime.datetime.now()
     pm = False
 
     # if the time has changed, update the display values
-    if time.minute != newtime.minute:
+    if current_time.minute != newtime.minute:
         hour = newtime.hour
         minute = newtime.minute
     else:
-        hour = time.hour
-        minute = time.minute
+        hour = current_time.hour
+        minute = current_time.minute
     
     display_hour = 0
 
@@ -305,7 +304,7 @@ def main():
             blink = not blink
             last_ticks = pygame.time.get_ticks()
     
-        SysTime.sleep(0.05)
+        time.sleep(0.05)
 
 # main function
 if __name__ == '__main__': main()
