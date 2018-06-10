@@ -10,7 +10,7 @@
 
 
 # imports
-import datetime, pygame, sys, datetime
+import datetime, pygame, sys, datetime, time
 from pygame.locals import *
 
 # global variables
@@ -303,6 +303,8 @@ def main():
         if pygame.time.get_ticks() - last_ticks > 700:
             blink = not blink
             last_ticks = pygame.time.get_ticks()
+    
+        time.sleep(0.05)
 
 # main function
 if __name__ == '__main__': main()
