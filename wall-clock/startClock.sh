@@ -1,4 +1,4 @@
-sudo ntpdate -u pool.ntp.org
+sudo ntpdate -u -b pool.ntp.org
 
 cd /home/pi/source/wall-clock
 
