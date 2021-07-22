@@ -6,11 +6,12 @@
 #
 # Change log:
 #       2/3/2018	Initial Release
+#       7.21.2021   Updated default red hour to 7 instead of 6 (kids still wake up too early)
 #------------------------------------------------------------------------------------------------------
 
 
 # imports
-import datetime, pygame, sys, datetime, time
+import datetime, pygame, sys, datetime, time #, requests
 from pygame.locals import *
 
 # global variables
@@ -19,7 +20,7 @@ from pygame.locals import *
 #  the clock will be red (not time to wake up)
 
 # target hour
-red_hour = 6
+red_hour = 7
 
 # target minute
 red_minute = 0
@@ -31,11 +32,14 @@ show_settings = False
 current_time = datetime.datetime.now()
 
 # Making these rectangles global so config "screens" can be updated in a function
+#  while allowing the mail loop to check for collisions (aka 'click events') directly
 up_hour_rect = pygame.Rect(0,0,0,0)
 up_minute_rect = pygame.Rect(0,0,0,0)
 down_hour_rect = pygame.Rect(0,0,0,0)
 down_minute_rect = pygame.Rect(0,0,0,0)
 close_rect = pygame.Rect(0,0,0,0)
+am_pm_up_rect = pygame.Rect(0,0,0,0)
+am_pm_down_rect = pygame.Rect(0,0,0,0)
 
 # constants
 SCREEN_WIDTH = 800
@@ -53,13 +57,13 @@ def increase_hour():
     global red_hour
     red_hour = red_hour + 1
     if red_hour > 23:
-        red_hour = 1
+        red_hour = 0
 
 # decrease the target hour by one, if the hours is less than 1 set it to 12
 def decrease_hour():
     global red_hour
     red_hour = red_hour - 1
-    if red_hour < 1:
+    if red_hour < 0:
         red_hour = 23
 
 # increase the target minute by one, if it is more than 59 reset it to 0
@@ -77,18 +81,18 @@ def decrease_minute():
         red_minute = 59
 
 # this function handles the logic of displaying the clock to the screen
-def displayClock(display_font, screen, background, settings, blink):   
+def displayClock(display_font, screen, background, settings, blink): #, new_time):   
     # get the global time variable 
     global current_time
 
     # create a new time variable so we can compare the current time vs the last updated time
-    newtime = datetime.datetime.now()
+    new_time = datetime.datetime.now()
     pm = False
 
     # if the time has changed, update the display values
-    if current_time.minute != newtime.minute:
-        hour = newtime.hour
-        minute = newtime.minute
+    if current_time.minute != new_time.minute:
+        hour = new_time.hour
+        minute = new_time.minute
     else:
         hour = current_time.hour
         minute = current_time.minute
@@ -148,55 +152,90 @@ def displayClock(display_font, screen, background, settings, blink):
     pygame.display.flip()
 
 # This function will handle all the code to display the settings screen.
-def display_settings(background, screen, display_font, up, down, close):
+# background -
+# screen - 
+# primary_display_font - The font/size to draw the major items on the screen
+# secondary_display_font - The font/size to draw other items on the screen
+# up - the image used for the up button
+# down - the image used for the down button
+# close - the image use for the close button
+def display_settings(background, screen, primary_display_font, secondary_display_font, up, down, close):
     # get the global rectangles.  These are global because the main loop has to have access to them
     #  to see if someone has clicked the buttons
     global up_hour_rect
     global up_minute_rect
     global down_hour_rect
     global down_minute_rect
+    global am_pm_up_rect
+    global am_pm_down_rect
+    
     global close_rect
 
     # first, build our text objects, these will be the focal point of all the other objects on the screen
     color = MATRIX_GREEN
-    hour_text = display_font.render(str(red_hour), 1, color)
-    minute_text = display_font.render(str(red_minute), 1, color)
+    am_pm_value = "AM"
+
+    if red_hour > 12:
+        am_pm_value = "PM"
+ 
+    hour_text = primary_display_font.render(str(red_hour).zfill(2), 1, color)
+    minute_text = primary_display_font.render(str(red_minute).zfill(2), 1, color)
+    am_pm_text = secondary_display_font.render(am_pm_value, 1, color)
 
     # Define some constants for positions on the screen
     HOUR_POS_X = 100
-    TIME_POS_Y = 150
+    HOUR_POS_Y = 150
+
     MINUTE_POS_X = 400 #HOUR_POS_X + 300
-    UP_HOUR_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up.get_width() / 2)
-    UP_BUTTON_POS_Y = TIME_POS_Y - up.get_height() 
-    BUTTON_MINUTE_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
-    
-    DOWN_HOUR_POS_X = UP_HOUR_POS_X 
-    DOWN_BUTTON_POS_Y = TIME_POS_Y + hour_text.get_height() - 20
+    MINUTE_POS_Y = HOUR_POS_Y
+
+    UP_HOUR_BUTTON_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up.get_width() / 2)
+    UP_HOUR_BUTTON_POS_Y = HOUR_POS_Y - up.get_height() 
+
+    UP_MINUTE_BUTTON_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
+    UP_MINUTE_BUTTON_POS_Y = UP_HOUR_BUTTON_POS_Y
+
+    DOWN_HOUR_BUTTON_POS_X = UP_HOUR_BUTTON_POS_X 
+    DOWN_HOUR_BUTTON_POS_Y = HOUR_POS_Y + hour_text.get_height() - 20
+
+    DOWN_MINUTE_BUTTON_POS_X = UP_MINUTE_BUTTON_POS_X
+    DOWN_MINUTE_BUTTON_POS_Y = DOWN_HOUR_BUTTON_POS_Y
+
+    AM_PM_POS_X = 650
+    AM_PM_POS_Y = HOUR_POS_Y
+
+    DOWN_AM_PM_BUTTON_POS_X = 0
+    DOWN_AM_PM_BUTTON_POS_Y = 0
+
+    UP_AM_PM_BUTTON_POS_X = 0
+    UP_AM_PM_BUTTON_POS_Y = 0
 
     CLOSE_BUTTON_X = SCREEN_WIDTH - close.get_width()
     CLOSE_BUTTON_Y = SCREEN_HEIGHT - close.get_height()
 
-    hour_loc = (HOUR_POS_X, TIME_POS_Y) 
+    hour_loc = (HOUR_POS_X, HOUR_POS_Y) 
     
-    minute_loc = (MINUTE_POS_X, TIME_POS_Y)
+    minute_loc = (MINUTE_POS_X, MINUTE_POS_Y)
+
+    am_pm_loc = (AM_PM_POS_X, AM_PM_POS_Y)
 
     # Now setup the images
     # up and down arrows
     up_hour_rect = up.get_rect()
-    up_hour_rect.x = UP_HOUR_POS_X 
-    up_hour_rect.y = UP_BUTTON_POS_Y 
+    up_hour_rect.x = UP_HOUR_BUTTON_POS_X 
+    up_hour_rect.y = UP_HOUR_BUTTON_POS_Y 
 
     up_minute_rect = up.get_rect()
-    up_minute_rect.x = BUTTON_MINUTE_POS_X 
-    up_minute_rect.y = UP_BUTTON_POS_Y 
+    up_minute_rect.x = UP_MINUTE_BUTTON_POS_X 
+    up_minute_rect.y = UP_MINUTE_BUTTON_POS_Y 
 
     down_hour_rect = down.get_rect()
-    down_hour_rect.x = DOWN_HOUR_POS_X
-    down_hour_rect.y = DOWN_BUTTON_POS_Y
+    down_hour_rect.x = DOWN_HOUR_BUTTON_POS_X
+    down_hour_rect.y = DOWN_HOUR_BUTTON_POS_Y
 
     down_minute_rect = down.get_rect()
-    down_minute_rect.x = BUTTON_MINUTE_POS_X
-    down_minute_rect.y = DOWN_BUTTON_POS_Y
+    down_minute_rect.x = DOWN_MINUTE_BUTTON_POS_X # UP_MINUTE_BUTTON_POS_X #Needs its own variable
+    down_minute_rect.y = DOWN_MINUTE_BUTTON_POS_Y #DOWN_HOUR_BUTTON_POS_Y # Ditto
 
     # close button image
     close_rect = close.get_rect()
@@ -214,6 +253,7 @@ def display_settings(background, screen, display_font, up, down, close):
     screen.blit(close, close_rect)
     screen.blit(hour_text, hour_loc)
     screen.blit(minute_text, minute_loc)
+    screen.blit(am_pm_text, am_pm_loc)
 
     # flip the buffers to display the screen
     pygame.display.flip()
@@ -221,8 +261,11 @@ def display_settings(background, screen, display_font, up, down, close):
 def main():
     pygame.init()
 
+    #web_api_max_wait = 10000
+
     # load the text font
     TEXT_FONT = pygame.font.Font('freesansbold.ttf', 200)
+    SECONDARY_TEXT_FONT = pygame.font.Font('freesansbold.ttf', 50)
 
     # load the images into constants for use in the functions
     IMG = pygame.image.load("settings.png")
@@ -294,10 +337,11 @@ def main():
                         show_settings = False          
 
         # if I click the button, the screen will stop updating
-        if not show_settings:        
-            displayClock(TEXT_FONT, screen, background, IMG, blink)
+        if not show_settings:      
+            #test = datetime.datetime(2011, 11, 4, 23, 35)  
+            displayClock(TEXT_FONT, screen, background, IMG, blink)#, test)
         else:
-            display_settings(background, screen, TEXT_FONT, UP, DOWN, CLOSE)
+            display_settings(background, screen, TEXT_FONT, SECONDARY_TEXT_FONT, UP, DOWN, CLOSE)
 
         # using the clock ticks to determine how fast to blink the colon
         if pygame.time.get_ticks() - last_ticks > 700:
