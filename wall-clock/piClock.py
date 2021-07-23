@@ -7,11 +7,14 @@
 # Change log:
 #       2/3/2018	Initial Release
 #       7.21.2021   Updated default red hour to 7 instead of 6 (kids still wake up too early)
+#                   Started updating settings screen to show 12 hour clock (w/ AM/PM)
 #------------------------------------------------------------------------------------------------------
 
-
+## NOTES I found this link that has a couple of functions to export the json to an object
+## https:stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
 # imports
-import datetime, pygame, sys, datetime, time #, requests
+import datetime, pygame, sys, datetime, time, requests, json
+from collections import namedtuple
 from pygame.locals import *
 
 # global variables
@@ -49,6 +52,12 @@ SCREEN_HEIGHT = 480
 RED = (255, 0, 0)
 MATRIX_GREEN = (0, 255, 21)
 BLACK = (0, 0, 0)
+
+def _json_object_hook(d):
+    return namedtuple('X', d.keys())(*d.values())
+    
+def json2obj(data):
+    return json.loads(data, object_hook=_json_object_)
 
 # define some functions for changing the time the clock will be red
 
