@@ -8,16 +8,26 @@
 #       2/3/2018	Initial Release
 #       7.21.2021   Updated default red hour to 7 instead of 6 (kids still wake up too early)
 #                   Started updating settings screen to show 12 hour clock (w/ AM/PM)
+#       7.23.2021   Finished updating the settings page and added the api functionality so the 
+#                   clock is now syncing to worldtimeapi.org to get its time
 #------------------------------------------------------------------------------------------------------
 
 ## NOTES I found this link that has a couple of functions to export the json to an object
 ## https:stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
 
 # imports
-import datetime, pygame, sys, datetime, time, requests, json
-from collections import namedtuple
+import datetime, pygame, sys, datetime, time, requests
 from pygame.locals import *
 
+def get_time():
+    # make the api request
+    response = requests.get("http://worldtimeapi.org/api/timezone/America/Chicago")
+    # useful page for this part was found here: https://docs.python.org/3/tutorial/datastructures.html#dictionaries
+    #https://stackoverflow.com/questions/3682748/converting-unix-timestamp-string-to-readable-date
+    data = response.json()
+    dt = datetime.datetime.fromtimestamp(data['unixtime'])
+    return dt
+    
 # global variables
 
 # The "Target Time"  While the current time is less than this time (relative, since we are using a simple 12 hour time)
@@ -33,7 +43,7 @@ red_minute = 0
 show_settings = False
 
 # set the current time, this is used to make the drawing more efficient
-current_time = datetime.datetime.now()
+current_time = get_time()
 
 # Making these rectangles global so config "screens" can be updated in a function
 #  while allowing the mail loop to check for collisions (aka 'click events') directly
@@ -43,24 +53,17 @@ down_hour_rect = pygame.Rect(0,0,0,0)
 down_minute_rect = pygame.Rect(0,0,0,0)
 close_rect = pygame.Rect(0,0,0,0)
 am_pm_rect = pygame.Rect(0,0,0,0)
-#am_pm_up_rect = pygame.Rect(0,0,0,0)
-#am_pm_down_rect = pygame.Rect(0,0,0,0)
 
 # constants
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 480
 
 # colors that are used in this program
-RED = (255, 0, 0)
-MATRIX_GREEN = (0, 255, 21)
-BLACK = (0, 0, 0)
-BUTTON_BLUE = (51, 122, 183)
-
-def _json_object_hook(d):
-    return namedtuple('X', d.keys())(*d.values())
-    
-def json2obj(data):
-    return json.loads(data, object_hook=_json_object_hook)
+colors = {}
+colors['red'] = (255, 0, 0)
+colors['matrix_green'] = (0, 255, 21)
+colors['black'] = (0, 0, 0)
+colors['button_blue'] = (51, 122, 183)
 
 # define some functions for changing the time the clock will be red
 
@@ -115,15 +118,6 @@ def change_am_pm():
     global red_hour
     
     red_hour = (red_hour + 12) % 24
- 
-def get_time():
-    # make the api request
-    response = requests.get("http://worldtimeapi.org/api/timezone/America/Chicago")
-    # useful page for this part was found here: https://docs.python.org/3/tutorial/datastructures.html#dictionaries
-    #https://stackoverflow.com/questions/3682748/converting-unix-timestamp-string-to-readable-date
-    data = response.json()
-    dt = datetime.datetime.fromtimestamp(data['unixtime'])
-    return dt
 
 # this function handles the logic of displaying the clock to the screen
 def displayClock(display_font, screen, background, settings, blink, new_time):   
@@ -149,26 +143,26 @@ def displayClock(display_font, screen, background, settings, blink, new_time):
     displayTime = display_hour + ":" + display_minutes
 
     # set the default color for the clock, in this case, green
-    color = MATRIX_GREEN
+    color = colors['matrix_green']
     
     # if the current time is less than the target time, set the color to red
     if hour < red_hour or (red_hour < 12 and hour >= 12):
-        color = RED
+        color = colors['red']
     elif hour == red_hour and minute < red_minute:
-        color = RED
+        color = colors['red']
     
     # create the text surface that we will blit to the screen
     text = display_font.render(str(displayTime), 1, color)
 
     # create a surface for the colon so we can use it to blank it out on the blink
-    colonText = display_font.render(":", 1, MATRIX_GREEN)
+    colonText = display_font.render(":", 1, colors['matrix_green'])
 
     # blit the background to clear the screen
     screen.blit(background, (0,0))
     
     # if we are blinking the colon, draw a rectangle over top of the colon in the text surface 
     if blink:
-        pygame.draw.rect(text, BLACK,
+        pygame.draw.rect(text, colors['black'],
                         (text.get_width() / 2 - colonText.get_width() / 2,
                         text.get_height() /2 - colonText.get_height() / 2,
                         colonText.get_width(), colonText.get_height()))
@@ -214,7 +208,7 @@ def display_settings(background, screen, primary_display_font, secondary_display
     global close_rect
 
     # first, build our text objects, these will be the focal point of all the other objects on the screen
-    color = MATRIX_GREEN
+    color = colors['matrix_green']
     am_pm_value = "AM"
 
     if red_hour >= 12:
@@ -283,8 +277,8 @@ def display_settings(background, screen, primary_display_font, secondary_display
     down_hour_rect.y = DOWN_HOUR_BUTTON_POS_Y
 
     down_minute_rect = down.get_rect()
-    down_minute_rect.x = DOWN_MINUTE_BUTTON_POS_X # UP_MINUTE_BUTTON_POS_X #Needs its own variable
-    down_minute_rect.y = DOWN_MINUTE_BUTTON_POS_Y #DOWN_HOUR_BUTTON_POS_Y # Ditto
+    down_minute_rect.x = DOWN_MINUTE_BUTTON_POS_X 
+    down_minute_rect.y = DOWN_MINUTE_BUTTON_POS_Y
     
     am_pm_rect.x = AM_PM_BUTTON_POS_X
     am_pm_rect.y = AM_PM_BUTTON_POS_Y
@@ -299,7 +293,7 @@ def display_settings(background, screen, primary_display_font, secondary_display
     # first blank the screen to make sure we don't have any stray artifacts
     screen.blit(background, (0,0))
     
-    pygame.draw.rect(screen, BUTTON_BLUE, am_pm_rect)
+    pygame.draw.rect(screen, colors['button_blue'], am_pm_rect)
 
     # blit all the buttons and the text
     screen.blit(up, up_hour_rect)
@@ -319,7 +313,7 @@ def main():
 
     web_api_max_wait = 10000
 
-    dt = get_time()
+    dt = current_time
     
     # load the text font
     TEXT_FONT = pygame.font.Font('freesansbold.ttf', 200)
