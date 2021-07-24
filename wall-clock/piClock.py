@@ -12,6 +12,7 @@
 
 ## NOTES I found this link that has a couple of functions to export the json to an object
 ## https:stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
+
 # imports
 import datetime, pygame, sys, datetime, time, requests, json
 from collections import namedtuple
@@ -41,8 +42,9 @@ up_minute_rect = pygame.Rect(0,0,0,0)
 down_hour_rect = pygame.Rect(0,0,0,0)
 down_minute_rect = pygame.Rect(0,0,0,0)
 close_rect = pygame.Rect(0,0,0,0)
-am_pm_up_rect = pygame.Rect(0,0,0,0)
-am_pm_down_rect = pygame.Rect(0,0,0,0)
+am_pm_rect = pygame.Rect(0,0,0,0)
+#am_pm_up_rect = pygame.Rect(0,0,0,0)
+#am_pm_down_rect = pygame.Rect(0,0,0,0)
 
 # constants
 SCREEN_WIDTH = 800
@@ -52,12 +54,13 @@ SCREEN_HEIGHT = 480
 RED = (255, 0, 0)
 MATRIX_GREEN = (0, 255, 21)
 BLACK = (0, 0, 0)
+BUTTON_BLUE = (51, 122, 183)
 
 def _json_object_hook(d):
     return namedtuple('X', d.keys())(*d.values())
     
 def json2obj(data):
-    return json.loads(data, object_hook=_json_object_)
+    return json.loads(data, object_hook=_json_object_hook)
 
 # define some functions for changing the time the clock will be red
 
@@ -89,13 +92,46 @@ def decrease_minute():
     if red_minute < 0:
         red_minute = 59
 
+# Convert the military time hour to 12 hour time with 0 padding
+def get_display_hour(hour):
+    display_hour = 0
+
+    if hour > 12:
+        display_hour = hour - 12
+    else:
+        display_hour = hour
+    
+    if hour == 0:
+        display_hour = 12
+        
+    return str(display_hour).zfill(2)
+    
+# Convert the minutes to nice 0 filled string
+def get_display_minutes(minutes):
+    return str(minutes).zfill(2)
+   
+# Change the time from am to pm
+def change_am_pm():
+    global red_hour
+    
+    red_hour = (red_hour + 12) % 24
+ 
+def get_time():
+    # make the api request
+    response = requests.get("http://worldtimeapi.org/api/timezone/America/Chicago")
+    # useful page for this part was found here: https://docs.python.org/3/tutorial/datastructures.html#dictionaries
+    #https://stackoverflow.com/questions/3682748/converting-unix-timestamp-string-to-readable-date
+    data = response.json()
+    dt = datetime.datetime.fromtimestamp(data['unixtime'])
+    return dt
+
 # this function handles the logic of displaying the clock to the screen
-def displayClock(display_font, screen, background, settings, blink): #, new_time):   
+def displayClock(display_font, screen, background, settings, blink, new_time):   
     # get the global time variable 
     global current_time
 
     # create a new time variable so we can compare the current time vs the last updated time
-    new_time = datetime.datetime.now()
+    #new_time = datetime.datetime.now()
     pm = False
 
     # if the time has changed, update the display values
@@ -106,15 +142,11 @@ def displayClock(display_font, screen, background, settings, blink): #, new_time
         hour = current_time.hour
         minute = current_time.minute
     
-    display_hour = 0
-
-    if hour > 12:
-        display_hour = hour - 12
-    else:
-        display_hour = hour
+    display_hour = get_display_hour(hour)
+    display_minutes = get_display_minutes(minute)
         
     # create the text that will be drawn to the screen
-    displayTime = str(display_hour).zfill(2) + ":" + str(minute).zfill(2)
+    displayTime = display_hour + ":" + display_minutes
 
     # set the default color for the clock, in this case, green
     color = MATRIX_GREEN
@@ -175,8 +207,9 @@ def display_settings(background, screen, primary_display_font, secondary_display
     global up_minute_rect
     global down_hour_rect
     global down_minute_rect
-    global am_pm_up_rect
-    global am_pm_down_rect
+    global am_pm_rect
+    #global am_pm_up_rect
+    #global am_pm_down_rect
     
     global close_rect
 
@@ -184,11 +217,14 @@ def display_settings(background, screen, primary_display_font, secondary_display
     color = MATRIX_GREEN
     am_pm_value = "AM"
 
-    if red_hour > 12:
+    if red_hour >= 12:
         am_pm_value = "PM"
  
-    hour_text = primary_display_font.render(str(red_hour).zfill(2), 1, color)
-    minute_text = primary_display_font.render(str(red_minute).zfill(2), 1, color)
+    display_hour = get_display_hour(red_hour)
+    display_minutes = get_display_minutes(red_minute)
+    
+    hour_text = primary_display_font.render(display_hour, 1, color)
+    minute_text = primary_display_font.render(display_minutes, 1, color)
     am_pm_text = secondary_display_font.render(am_pm_value, 1, color)
 
     # Define some constants for positions on the screen
@@ -212,7 +248,11 @@ def display_settings(background, screen, primary_display_font, secondary_display
 
     AM_PM_POS_X = 650
     AM_PM_POS_Y = HOUR_POS_Y
+    
+    AM_PM_BUTTON_POS_X = AM_PM_POS_X - 4
+    AM_PM_BUTTON_POS_Y = AM_PM_POS_Y - 4
 
+# TODO
     DOWN_AM_PM_BUTTON_POS_X = 0
     DOWN_AM_PM_BUTTON_POS_Y = 0
 
@@ -245,6 +285,11 @@ def display_settings(background, screen, primary_display_font, secondary_display
     down_minute_rect = down.get_rect()
     down_minute_rect.x = DOWN_MINUTE_BUTTON_POS_X # UP_MINUTE_BUTTON_POS_X #Needs its own variable
     down_minute_rect.y = DOWN_MINUTE_BUTTON_POS_Y #DOWN_HOUR_BUTTON_POS_Y # Ditto
+    
+    am_pm_rect.x = AM_PM_BUTTON_POS_X
+    am_pm_rect.y = AM_PM_BUTTON_POS_Y
+    am_pm_rect.height = am_pm_text.get_height() + 4
+    am_pm_rect.width = am_pm_text.get_width() + 4
 
     # close button image
     close_rect = close.get_rect()
@@ -253,6 +298,8 @@ def display_settings(background, screen, primary_display_font, secondary_display
 
     # first blank the screen to make sure we don't have any stray artifacts
     screen.blit(background, (0,0))
+    
+    pygame.draw.rect(screen, BUTTON_BLUE, am_pm_rect)
 
     # blit all the buttons and the text
     screen.blit(up, up_hour_rect)
@@ -270,8 +317,10 @@ def display_settings(background, screen, primary_display_font, secondary_display
 def main():
     pygame.init()
 
-    #web_api_max_wait = 10000
+    web_api_max_wait = 10000
 
+    dt = get_time()
+    
     # load the text font
     TEXT_FONT = pygame.font.Font('freesansbold.ttf', 200)
     SECONDARY_TEXT_FONT = pygame.font.Font('freesansbold.ttf', 50)
@@ -283,9 +332,9 @@ def main():
     CLOSE = pygame.image.load("close.png")
 
     # create the display with the defined size and make it full screen
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+    #screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
     # this is for developing locally on my laptop.
-    #screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     
     # create the surface for the background and create it
     background = pygame.Surface(screen.get_size())
@@ -305,6 +354,7 @@ def main():
 
     # get the current clock ticks
     last_ticks = pygame.time.get_ticks()
+    last_ticks_web_call = pygame.time.get_ticks()
     
     # main loop
     while 1:
@@ -343,12 +393,18 @@ def main():
                     if down_minute_rect.collidepoint(x,y):
                         decrease_minute()
                     if close_rect.collidepoint(x,y):
-                        show_settings = False          
+                        show_settings = False     
+                    if am_pm_rect.collidepoint(x,y):
+                        change_am_pm()
 
         # if I click the button, the screen will stop updating
         if not show_settings:      
-            #test = datetime.datetime(2011, 11, 4, 23, 35)  
-            displayClock(TEXT_FONT, screen, background, IMG, blink)#, test)
+            #dt = datetime.datetime(2011, 11, 4, 23, 35)  
+            if(pygame.time.get_ticks() - last_ticks_web_call > web_api_max_wait):
+                last_ticks_web_call = pygame.time.get_ticks()
+                dt = get_time()
+            
+            displayClock(TEXT_FONT, screen, background, IMG, blink, dt)
         else:
             display_settings(background, screen, TEXT_FONT, SECONDARY_TEXT_FONT, UP, DOWN, CLOSE)
 
