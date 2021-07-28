@@ -16,7 +16,7 @@
 ## https:stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
 
 # imports
-import datetime, pygame, sys, datetime, time, requests
+import datetime, pygame, sys, datetime, time, requests, os
 from pygame.locals import *
 
 def get_time():
@@ -45,6 +45,19 @@ show_settings = False
 # set the current time, this is used to make the drawing more efficient
 current_time = get_time()
 
+### NEW 
+# The current font used by the system
+current_font = "freesansbold.ttf"
+
+available_fonts = []
+
+# The primary text font size
+primary_font_size = 200
+
+# the secondary text font size
+secondary_font_size = 50
+###
+
 # Making these rectangles global so config "screens" can be updated in a function
 #  while allowing the mail loop to check for collisions (aka 'click events') directly
 up_hour_rect = pygame.Rect(0,0,0,0)
@@ -66,6 +79,17 @@ colors['black'] = (0, 0, 0)
 colors['button_blue'] = (51, 122, 183)
 
 # define some functions for changing the time the clock will be red
+
+### NEW function
+def get_all_fonts():
+    fonts = []
+    
+    for root, dirs, files in os.walk("/usr/share/fonts/truetype"):
+        for file in files:
+            if file.endswith(".ttf"):
+                fonts.append(file)
+    
+    return fonts
 
 # increase the target hour by one, if it is greater than 12 set it to 1
 def increase_hour():
@@ -311,16 +335,20 @@ def display_settings(background, screen, primary_display_font, secondary_display
 def main():
     pygame.init()
 
+    ### New
+    available_fonts = get_all_fonts()
+    ###
+    
     web_api_max_wait = 10000
 
     dt = current_time
     
     # load the text font
-    TEXT_FONT = pygame.font.Font('freesansbold.ttf', 200)
-    SECONDARY_TEXT_FONT = pygame.font.Font('freesansbold.ttf', 50)
+    TEXT_FONT = pygame.font.Font(current_font, primary_font_size)
+    SECONDARY_TEXT_FONT = pygame.font.Font(current_font, secondary_font_size)
 
     # load the images into constants for use in the functions
-    IMG = pygame.image.load("settings.png")
+    SETTINGS = pygame.image.load("settings.png")
     UP = pygame.image.load("up.png")
     DOWN = pygame.image.load("down.png")
     CLOSE = pygame.image.load("close.png")
@@ -373,7 +401,7 @@ def main():
 
                 # if the user clicked the settings button, set show settings to true, this will update the screen to 
                 #  show the settings window
-                if IMG.get_rect().collidepoint(x,y):
+                if SETTINGS.get_rect().collidepoint(x,y):
                     show_settings = True
                 
                 # only check these events if we are on the settings screen (these buttons don't exist on the main window)
@@ -398,7 +426,7 @@ def main():
                 last_ticks_web_call = pygame.time.get_ticks()
                 dt = get_time()
             
-            displayClock(TEXT_FONT, screen, background, IMG, blink, dt)
+            displayClock(TEXT_FONT, screen, background, SETTINGS, blink, dt)
         else:
             display_settings(background, screen, TEXT_FONT, SECONDARY_TEXT_FONT, UP, DOWN, CLOSE)
 
