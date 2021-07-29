@@ -405,9 +405,9 @@ def main():
     CLOSE = pygame.image.load("close.png")
 
     # create the display with the defined size and make it full screen
-    #screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
     # this is for developing locally on my laptop.
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    #screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     
     # create the surface for the background and create it
     background = pygame.Surface(screen.get_size())
