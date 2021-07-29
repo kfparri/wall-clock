@@ -47,7 +47,7 @@ current_time = get_time()
 
 ### NEW 
 # The current font used by the system
-current_font = "freesansbold.ttf"
+current_font = "freesans" #"freesansbold.ttf"
 
 available_fonts = []
 
@@ -66,6 +66,8 @@ down_hour_rect = pygame.Rect(0,0,0,0)
 down_minute_rect = pygame.Rect(0,0,0,0)
 close_rect = pygame.Rect(0,0,0,0)
 am_pm_rect = pygame.Rect(0,0,0,0)
+text_color_rect = pygame.Rect(0,0,0,0)
+text_font_rect = pygame.Rect(0,0,0,0)
 
 # constants
 SCREEN_WIDTH = 800
@@ -77,17 +79,19 @@ colors['red'] = (255, 0, 0)
 colors['matrix_green'] = (0, 255, 21)
 colors['black'] = (0, 0, 0)
 colors['button_blue'] = (51, 122, 183)
+colors['white'] = (255, 255, 255)
+
+current_color = colors['button_blue']
 
 # define some functions for changing the time the clock will be red
 
-### NEW function
 def get_all_fonts():
     fonts = []
     
     for root, dirs, files in os.walk("/usr/share/fonts/truetype"):
         for file in files:
             if file.endswith(".ttf"):
-                fonts.append(file)
+                fonts.append(file.lower())
     
     return fonts
 
@@ -147,7 +151,8 @@ def change_am_pm():
 def displayClock(display_font, screen, background, settings, blink, new_time):   
     # get the global time variable 
     global current_time
-
+    global current_color
+    
     # create a new time variable so we can compare the current time vs the last updated time
     #new_time = datetime.datetime.now()
     pm = False
@@ -167,7 +172,7 @@ def displayClock(display_font, screen, background, settings, blink, new_time):
     displayTime = display_hour + ":" + display_minutes
 
     # set the default color for the clock, in this case, green
-    color = colors['matrix_green']
+    color = current_color # colors['matrix_green']
     
     # if the current time is less than the target time, set the color to red
     if hour < red_hour or (red_hour < 12 and hour >= 12):
@@ -210,6 +215,40 @@ def displayClock(display_font, screen, background, settings, blink, new_time):
     # flip will flip the buffer to display all the images that we've blited
     pygame.display.flip()
 
+def rotate_current_color():
+    global colors
+    global current_color
+    
+    assign_color = False
+    
+    for color in colors:
+        if assign_color and not color == 'black':
+            current_color = colors[color]
+            assign_color = False
+            return
+        
+        if current_color == colors[color]:
+            # the next color is going to be the new current color
+            assign_color = True
+    
+    ### You need to fix this to be better!
+    if assign_color:
+        current_color = colors['button_blue']
+        
+def rotate_current_font():
+    global current_font
+    global available_fonts
+    
+    available_fonts = pygame.font.get_fonts()
+    
+    for i in range(len(available_fonts)):
+        if available_fonts[i] == current_font:
+            if(i == len(available_fonts) - 1):
+                current_font = available_fonts[0]
+            else:
+                current_font = available_fonts[i + 1]
+            return
+
 # This function will handle all the code to display the settings screen.
 # background -
 # screen - 
@@ -226,13 +265,17 @@ def display_settings(background, screen, primary_display_font, secondary_display
     global down_hour_rect
     global down_minute_rect
     global am_pm_rect
-    #global am_pm_up_rect
-    #global am_pm_down_rect
-    
+    global text_color_rect
     global close_rect
+    global text_font_rect
+    
+    global current_color
+    global current_font
+    
+    color_button_rect_size = 80
 
     # first, build our text objects, these will be the focal point of all the other objects on the screen
-    color = colors['matrix_green']
+    color = current_color
     am_pm_value = "AM"
 
     if red_hour >= 12:
@@ -243,7 +286,8 @@ def display_settings(background, screen, primary_display_font, secondary_display
     
     hour_text = primary_display_font.render(display_hour, 1, color)
     minute_text = primary_display_font.render(display_minutes, 1, color)
-    am_pm_text = secondary_display_font.render(am_pm_value, 1, color)
+    am_pm_text = secondary_display_font.render(am_pm_value, 1, colors['white'])
+    font_text = secondary_display_font.render(current_font, 1, colors['white'])
 
     # Define some constants for positions on the screen
     HOUR_POS_X = 100
@@ -270,21 +314,19 @@ def display_settings(background, screen, primary_display_font, secondary_display
     AM_PM_BUTTON_POS_X = AM_PM_POS_X - 4
     AM_PM_BUTTON_POS_Y = AM_PM_POS_Y - 4
 
-# TODO
-    DOWN_AM_PM_BUTTON_POS_X = 0
-    DOWN_AM_PM_BUTTON_POS_Y = 0
-
-    UP_AM_PM_BUTTON_POS_X = 0
-    UP_AM_PM_BUTTON_POS_Y = 0
-
     CLOSE_BUTTON_X = SCREEN_WIDTH - close.get_width()
     CLOSE_BUTTON_Y = SCREEN_HEIGHT - close.get_height()
+    
+    COLOR_CHANGE_BUTTON_X = 0
+    COLOR_CHANGE_BUTTON_Y = SCREEN_HEIGHT - color_button_rect_size
 
     hour_loc = (HOUR_POS_X, HOUR_POS_Y) 
     
     minute_loc = (MINUTE_POS_X, MINUTE_POS_Y)
 
     am_pm_loc = (AM_PM_POS_X, AM_PM_POS_Y)
+    
+    font_text_loc = (0, 0)
 
     # Now setup the images
     # up and down arrows
@@ -308,6 +350,18 @@ def display_settings(background, screen, primary_display_font, secondary_display
     am_pm_rect.y = AM_PM_BUTTON_POS_Y
     am_pm_rect.height = am_pm_text.get_height() + 4
     am_pm_rect.width = am_pm_text.get_width() + 4
+    
+    #Color change rect
+    text_color_rect.x = COLOR_CHANGE_BUTTON_X
+    text_color_rect.y = COLOR_CHANGE_BUTTON_Y
+    text_color_rect.width = color_button_rect_size
+    text_color_rect.height = color_button_rect_size
+    
+    # Font text rect
+    text_font_rect.x = 0
+    text_font_rect.y = 0
+    text_font_rect.width = font_text.get_width() + 4
+    text_font_rect.height = font_text.get_height() + 4
 
     # close button image
     close_rect = close.get_rect()
@@ -318,6 +372,8 @@ def display_settings(background, screen, primary_display_font, secondary_display
     screen.blit(background, (0,0))
     
     pygame.draw.rect(screen, colors['button_blue'], am_pm_rect)
+    pygame.draw.rect(screen, current_color, text_color_rect)
+    pygame.draw.rect(screen, colors['button_blue'], text_font_rect)
 
     # blit all the buttons and the text
     screen.blit(up, up_hour_rect)
@@ -328,6 +384,7 @@ def display_settings(background, screen, primary_display_font, secondary_display
     screen.blit(hour_text, hour_loc)
     screen.blit(minute_text, minute_loc)
     screen.blit(am_pm_text, am_pm_loc)
+    screen.blit(font_text, font_text_loc)
 
     # flip the buffers to display the screen
     pygame.display.flip()
@@ -335,17 +392,11 @@ def display_settings(background, screen, primary_display_font, secondary_display
 def main():
     pygame.init()
 
-    ### New
     available_fonts = get_all_fonts()
-    ###
     
     web_api_max_wait = 10000
 
     dt = current_time
-    
-    # load the text font
-    TEXT_FONT = pygame.font.Font(current_font, primary_font_size)
-    SECONDARY_TEXT_FONT = pygame.font.Font(current_font, secondary_font_size)
 
     # load the images into constants for use in the functions
     SETTINGS = pygame.image.load("settings.png")
@@ -380,6 +431,10 @@ def main():
     
     # main loop
     while 1:
+        # load the text font
+        TEXT_FONT = pygame.font.SysFont(current_font, primary_font_size)
+        SECONDARY_TEXT_FONT = pygame.font.SysFont(current_font, secondary_font_size)
+        
         # event loop
         for event in pygame.event.get():
             # check for quit events (close windows)
@@ -399,11 +454,6 @@ def main():
                 # get the mouse position x and y values
                 x, y = event.pos                
 
-                # if the user clicked the settings button, set show settings to true, this will update the screen to 
-                #  show the settings window
-                if SETTINGS.get_rect().collidepoint(x,y):
-                    show_settings = True
-                
                 # only check these events if we are on the settings screen (these buttons don't exist on the main window)
                 if show_settings:
                     if up_hour_rect.collidepoint(x,y):
@@ -418,6 +468,17 @@ def main():
                         show_settings = False     
                     if am_pm_rect.collidepoint(x,y):
                         change_am_pm()
+                    if text_color_rect.collidepoint(x,y):
+                        rotate_current_color()
+                    if text_font_rect.collidepoint(x,y):
+                        rotate_current_font()
+                        
+                # if the user clicked the settings button, set show settings to true, this will update the screen to 
+                #  show the settings window
+                if SETTINGS.get_rect().collidepoint(x,y):
+                    show_settings = True
+                
+                
 
         # if I click the button, the screen will stop updating
         if not show_settings:      
