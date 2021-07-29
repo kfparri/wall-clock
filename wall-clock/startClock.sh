@@ -13,4 +13,6 @@ cd wall-clock
 sudo mv /usr/share/plymouth/themes/pix/splash.png /usr/share/plymouth/themes/pix/splash.png.bak
 sudo cp splash.png /usr/share/plymouth/themes/pix/splash.png
 
+// make sure you install requests
+//  pip install requests
 python piClock.py
