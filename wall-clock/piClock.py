@@ -16,47 +16,37 @@
 ## https:stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
 
 # imports
-import datetime, pygame, sys, datetime, time, requests, os
+import datetime, pygame, sys, datetime, time, requests, os, logging
 from pygame.locals import *
+from ClockSettings import ClockSettings
+
+logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.ERROR,
+        datefmt='%m-%d-%Y %H:%M:%S')
 
 def get_time():
     # make the api request
-    response = requests.get("http://worldtimeapi.org/api/timezone/America/Chicago")
+    url = "http://worldtimeapi.org/api/timezone/America/Chicago"
+    
+    logging.debug('Calling WorldTimeAPI to get the time: ' + url)
+    
+    response = requests.get(url)
+    
+    logging.debug('Call to API complete!')
+    
     # useful page for this part was found here: https://docs.python.org/3/tutorial/datastructures.html#dictionaries
     #https://stackoverflow.com/questions/3682748/converting-unix-timestamp-string-to-readable-date
     data = response.json()
     dt = datetime.datetime.fromtimestamp(data['unixtime'])
     return dt
-    
+        
 # global variables
 
-# The "Target Time"  While the current time is less than this time (relative, since we are using a simple 12 hour time)
-#  the clock will be red (not time to wake up)
-
-# target hour
-red_hour = 7
-
-# target minute
-red_minute = 0
-
-# this flag tells the main loop whether to display the clock or the settings
-show_settings = False
+app_settings = ClockSettings()
 
 # set the current time, this is used to make the drawing more efficient
 current_time = get_time()
-
-### NEW 
-# The current font used by the system
-current_font = "freesans" #"freesansbold.ttf"
-
-available_fonts = []
-
-# The primary text font size
-primary_font_size = 200
-
-# the secondary text font size
-secondary_font_size = 50
-###
 
 # Making these rectangles global so config "screens" can be updated in a function
 #  while allowing the mail loop to check for collisions (aka 'click events') directly
@@ -81,11 +71,12 @@ colors['black'] = (0, 0, 0)
 colors['button_blue'] = (51, 122, 183)
 colors['white'] = (255, 255, 255)
 
-current_color = colors['button_blue']
+current_color = colors['matrix_green']
 
 # define some functions for changing the time the clock will be red
-
+    
 def get_all_fonts():
+    logging.debug('Getting all the fonts from the system')
     fonts = []
     
     for root, dirs, files in os.walk("/usr/share/fonts/truetype"):
@@ -97,31 +88,31 @@ def get_all_fonts():
 
 # increase the target hour by one, if it is greater than 12 set it to 1
 def increase_hour():
-    global red_hour
-    red_hour = red_hour + 1
-    if red_hour > 23:
-        red_hour = 0
+    global app_settings
+    app_settings.red_hour = app_settings.red_hour + 1
+    if app_settings.red_hour > 23:
+        app_settings.red_hour = 0
 
 # decrease the target hour by one, if the hours is less than 1 set it to 12
 def decrease_hour():
-    global red_hour
-    red_hour = red_hour - 1
-    if red_hour < 0:
-        red_hour = 23
+    global app_settings
+    app_settings.red_hour = app_settings.red_hour - 1
+    if app_settings.red_hour < 0:
+        app_settings.red_hour = 23
 
 # increase the target minute by one, if it is more than 59 reset it to 0
 def increase_minute():
-    global red_minute
-    red_minute = red_minute + 1
-    if red_minute > 59:
-        red_minute = 0
+    global app_settings
+    app_settings.red_minute = app_settings.red_minute + 1
+    if app_settings.red_minute > 59:
+        app_settings.red_minute = 0
 
 # decrease the target minute by one, if it is less than 0 set it to 59
 def decrease_minute():
-    global red_minute
-    red_minute = red_minute - 1
-    if red_minute < 0:
-        red_minute = 59
+    global app_settings
+    app_settings.red_minute = app_settings.red_minute - 1
+    if app_settings.red_minute < 0:
+        app_settings.red_minute = 59
 
 # Convert the military time hour to 12 hour time with 0 padding
 def get_display_hour(hour):
@@ -143,16 +134,16 @@ def get_display_minutes(minutes):
    
 # Change the time from am to pm
 def change_am_pm():
-    global red_hour
+    global app_settings
     
-    red_hour = (red_hour + 12) % 24
+    app_settings.red_hour = (app_settings.red_hour + 12) % 24
 
 # this function handles the logic of displaying the clock to the screen
 def displayClock(display_font, screen, background, settings, blink, new_time):   
     # get the global time variable 
     global current_time
     global current_color
-    
+
     # create a new time variable so we can compare the current time vs the last updated time
     #new_time = datetime.datetime.now()
     pm = False
@@ -164,6 +155,9 @@ def displayClock(display_font, screen, background, settings, blink, new_time):
     else:
         hour = current_time.hour
         minute = current_time.minute
+        
+    logging.debug('hour: {} minute: {}'.format(hour, minute))
+    logging.debug('red_hour: {} red_minute: {}'.format(app_settings.red_hour, app_settings.red_minute))
     
     display_hour = get_display_hour(hour)
     display_minutes = get_display_minutes(minute)
@@ -174,11 +168,15 @@ def displayClock(display_font, screen, background, settings, blink, new_time):
     # set the default color for the clock, in this case, green
     color = current_color # colors['matrix_green']
     
+    logging.debug('current color to use (color from current_color): {}'.format(color))
+    
     # if the current time is less than the target time, set the color to red
-    if hour < red_hour or (red_hour < 12 and hour >= 12):
+    if hour < app_settings.red_hour or (app_settings.red_hour < 12 and hour >= 12):
         color = colors['red']
-    elif hour == red_hour and minute < red_minute:
+    elif hour == app_settings.red_hour and minute < app_settings.red_minute:
         color = colors['red']
+    
+    logging.debug('color after checking the target time: {}'.format(color))
     
     # create the text surface that we will blit to the screen
     text = display_font.render(str(displayTime), 1, color)
@@ -236,17 +234,17 @@ def rotate_current_color():
         current_color = colors['button_blue']
         
 def rotate_current_font():
-    global current_font
-    global available_fonts
+    global app_settings
+    global app_settings
     
-    available_fonts = pygame.font.get_fonts()
+    app_settings.available_fonts = pygame.font.get_fonts()
     
-    for i in range(len(available_fonts)):
-        if available_fonts[i] == current_font:
-            if(i == len(available_fonts) - 1):
-                current_font = available_fonts[0]
+    for i in range(len(app_settings.available_fonts)):
+        if app_settings.available_fonts[i] == app_settings.current_font:
+            if(i == len(app_settings.available_fonts) - 1):
+                app_settings.current_font = app_settings.available_fonts[0]
             else:
-                current_font = available_fonts[i + 1]
+                app_settings.current_font = app_settings.available_fonts[i + 1]
             return
 
 # This function will handle all the code to display the settings screen.
@@ -270,7 +268,7 @@ def display_settings(background, screen, primary_display_font, secondary_display
     global text_font_rect
     
     global current_color
-    global current_font
+    global app_settings
     
     color_button_rect_size = 80
 
@@ -278,16 +276,16 @@ def display_settings(background, screen, primary_display_font, secondary_display
     color = current_color
     am_pm_value = "AM"
 
-    if red_hour >= 12:
+    if app_settings.red_hour >= 12:
         am_pm_value = "PM"
  
-    display_hour = get_display_hour(red_hour)
-    display_minutes = get_display_minutes(red_minute)
+    display_hour = get_display_hour(app_settings.red_hour)
+    display_minutes = get_display_minutes(app_settings.red_minute)
     
     hour_text = primary_display_font.render(display_hour, 1, color)
     minute_text = primary_display_font.render(display_minutes, 1, color)
     am_pm_text = secondary_display_font.render(am_pm_value, 1, colors['white'])
-    font_text = secondary_display_font.render(current_font, 1, colors['white'])
+    font_text = secondary_display_font.render(app_settings.current_font, 1, colors['white'])
 
     # Define some constants for positions on the screen
     HOUR_POS_X = 100
@@ -392,9 +390,9 @@ def display_settings(background, screen, primary_display_font, secondary_display
 def main():
     pygame.init()
 
-    available_fonts = get_all_fonts()
+    app_settings.available_fonts = get_all_fonts()
     
-    web_api_max_wait = 10000
+    web_api_max_wait = 50000
 
     dt = current_time
 
@@ -423,7 +421,7 @@ def main():
     blink = False    
 
     # we don't want to start the clock in the settings window
-    show_settings = False
+    app_settings.show_settings = False
 
     # get the current clock ticks
     last_ticks = pygame.time.get_ticks()
@@ -432,8 +430,8 @@ def main():
     # main loop
     while 1:
         # load the text font
-        TEXT_FONT = pygame.font.SysFont(current_font, primary_font_size)
-        SECONDARY_TEXT_FONT = pygame.font.SysFont(current_font, secondary_font_size)
+        TEXT_FONT = pygame.font.SysFont(app_settings.current_font, app_settings.primary_font_size)
+        SECONDARY_TEXT_FONT = pygame.font.SysFont(app_settings.current_font, app_settings.secondary_font_size)
         
         # event loop
         for event in pygame.event.get():
@@ -455,7 +453,7 @@ def main():
                 x, y = event.pos                
 
                 # only check these events if we are on the settings screen (these buttons don't exist on the main window)
-                if show_settings:
+                if app_settings.show_settings:
                     if up_hour_rect.collidepoint(x,y):
                         increase_hour()
                     if down_hour_rect.collidepoint(x,y):
@@ -465,7 +463,7 @@ def main():
                     if down_minute_rect.collidepoint(x,y):
                         decrease_minute()
                     if close_rect.collidepoint(x,y):
-                        show_settings = False     
+                        app_settings.show_settings = False     
                     if am_pm_rect.collidepoint(x,y):
                         change_am_pm()
                     if text_color_rect.collidepoint(x,y):
@@ -476,16 +474,18 @@ def main():
                 # if the user clicked the settings button, set show settings to true, this will update the screen to 
                 #  show the settings window
                 if SETTINGS.get_rect().collidepoint(x,y):
-                    show_settings = True
+                    app_settings.show_settings = True
                 
                 
 
         # if I click the button, the screen will stop updating
-        if not show_settings:      
+        if not app_settings.show_settings:      
             #dt = datetime.datetime(2011, 11, 4, 23, 35)  
             if(pygame.time.get_ticks() - last_ticks_web_call > web_api_max_wait):
                 last_ticks_web_call = pygame.time.get_ticks()
+                print('Getting the time')
                 dt = get_time()
+                print('Done getting the time')
             
             displayClock(TEXT_FONT, screen, background, SETTINGS, blink, dt)
         else:
