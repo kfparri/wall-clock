@@ -140,13 +140,12 @@ def change_am_pm():
     app_settings.red_hour = (app_settings.red_hour + 12) % 24
 
 # this function handles the logic of displaying the clock to the screen
-def displayClock(display_font, screen, background, settings, blink, new_time):   
+def displayClock(display_font, screen, background, settings_button, blink, new_time):   
     # get the global time variable 
     global current_time
     global current_color
 
     # create a new time variable so we can compare the current time vs the last updated time
-    #new_time = datetime.datetime.now()
     pm = False
 
     # if the time has changed, update the display values
@@ -199,14 +198,8 @@ def displayClock(display_font, screen, background, settings, blink, new_time):
     resultRect = screen.blit(text, ((SCREEN_WIDTH / 2) - text.get_width() / 2,
                         (SCREEN_HEIGHT / 2) - text.get_height() / 2))
     
-    # get the rectangle for the settings button
-    imgRect = settings.get_rect()
-    imgRect.x = 0
-    imgRect.y = 0
-
-    # blit the settings button to the screen
-    screen.blit(settings, imgRect)
-
+    settings_button.update(screen)
+    
     # if the current time is in the PM display the 'pm dot'
     if hour > 12:
         pygame.draw.circle(screen, color, (resultRect.right + 10, resultRect.bottom - 50), 10)
@@ -256,18 +249,7 @@ def rotate_current_font():
 # up - the image used for the up button
 # down - the image used for the down button
 # close - the image use for the close button
-def display_settings(background, screen, primary_display_font, secondary_display_font, up, down, close):
-    # get the global rectangles.  These are global because the main loop has to have access to them
-    #  to see if someone has clicked the buttons
-    global up_hour_rect
-    global up_minute_rect
-    global down_hour_rect
-    global down_minute_rect
-    global am_pm_rect
-    global text_color_rect
-    global close_rect
-    global text_font_rect
-    
+def display_settings(background, screen, primary_display_font, secondary_display_font, up_hour_button, up_minute_button, down_hour_button, down_minute_button, close_button, am_pm_button, text_color_button, text_font_button):    
     global current_color
     global app_settings
     
@@ -292,13 +274,13 @@ def display_settings(background, screen, primary_display_font, secondary_display
     HOUR_POS_X = 100
     HOUR_POS_Y = 150
 
-    MINUTE_POS_X = 400 #HOUR_POS_X + 300
+    MINUTE_POS_X = 400
     MINUTE_POS_Y = HOUR_POS_Y
 
-    UP_HOUR_BUTTON_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up.get_width() / 2)
-    UP_HOUR_BUTTON_POS_Y = HOUR_POS_Y - up.get_height() 
+    UP_HOUR_BUTTON_POS_X = HOUR_POS_X + (hour_text.get_width() / 2) - (up_hour_button.image.get_width() / 2)
+    UP_HOUR_BUTTON_POS_Y = HOUR_POS_Y - up_hour_button.image.get_height() 
 
-    UP_MINUTE_BUTTON_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up.get_width() / 2)
+    UP_MINUTE_BUTTON_POS_X = MINUTE_POS_X + (minute_text.get_width() / 2) - (up_hour_button.image.get_width() / 2)
     UP_MINUTE_BUTTON_POS_Y = UP_HOUR_BUTTON_POS_Y
 
     DOWN_HOUR_BUTTON_POS_X = UP_HOUR_BUTTON_POS_X 
@@ -313,9 +295,6 @@ def display_settings(background, screen, primary_display_font, secondary_display
     AM_PM_BUTTON_POS_X = AM_PM_POS_X - 4
     AM_PM_BUTTON_POS_Y = AM_PM_POS_Y - 4
 
-    CLOSE_BUTTON_X = SCREEN_WIDTH - close.get_width()
-    CLOSE_BUTTON_Y = SCREEN_HEIGHT - close.get_height()
-    
     COLOR_CHANGE_BUTTON_X = 0
     COLOR_CHANGE_BUTTON_Y = SCREEN_HEIGHT - color_button_rect_size
 
@@ -327,59 +306,47 @@ def display_settings(background, screen, primary_display_font, secondary_display
     
     font_text_loc = (0, 0)
 
-    # Now setup the images
-    # up and down arrows
-    up_hour_rect = up.get_rect()
-    up_hour_rect.x = UP_HOUR_BUTTON_POS_X 
-    up_hour_rect.y = UP_HOUR_BUTTON_POS_Y 
+    up_hour_button.x = UP_HOUR_BUTTON_POS_X 
+    up_hour_button.y = UP_HOUR_BUTTON_POS_Y 
 
-    up_minute_rect = up.get_rect()
-    up_minute_rect.x = UP_MINUTE_BUTTON_POS_X 
-    up_minute_rect.y = UP_MINUTE_BUTTON_POS_Y 
+    up_minute_button.x = UP_MINUTE_BUTTON_POS_X 
+    up_minute_button.y = UP_MINUTE_BUTTON_POS_Y 
 
-    down_hour_rect = down.get_rect()
-    down_hour_rect.x = DOWN_HOUR_BUTTON_POS_X
-    down_hour_rect.y = DOWN_HOUR_BUTTON_POS_Y
+    down_hour_button.x = DOWN_HOUR_BUTTON_POS_X
+    down_hour_button.y = DOWN_HOUR_BUTTON_POS_Y
 
-    down_minute_rect = down.get_rect()
-    down_minute_rect.x = DOWN_MINUTE_BUTTON_POS_X 
-    down_minute_rect.y = DOWN_MINUTE_BUTTON_POS_Y
+    down_minute_button.x = DOWN_MINUTE_BUTTON_POS_X 
+    down_minute_button.y = DOWN_MINUTE_BUTTON_POS_Y
     
-    am_pm_rect.x = AM_PM_BUTTON_POS_X
-    am_pm_rect.y = AM_PM_BUTTON_POS_Y
-    am_pm_rect.height = am_pm_text.get_height() + 4
-    am_pm_rect.width = am_pm_text.get_width() + 4
+    am_pm_button.x = AM_PM_BUTTON_POS_X
+    am_pm_button.y = AM_PM_BUTTON_POS_Y
+    am_pm_button.rect.height = am_pm_text.get_height() + 4
+    am_pm_button.rect.width = am_pm_text.get_width() + 4
     
     #Color change rect
-    text_color_rect.x = COLOR_CHANGE_BUTTON_X
-    text_color_rect.y = COLOR_CHANGE_BUTTON_Y
-    text_color_rect.width = color_button_rect_size
-    text_color_rect.height = color_button_rect_size
+    text_color_button.x = COLOR_CHANGE_BUTTON_X
+    text_color_button.y = COLOR_CHANGE_BUTTON_Y
+    text_color_button.rect.width = color_button_rect_size
+    text_color_button.rect.height = color_button_rect_size
     
     # Font text rect
-    text_font_rect.x = 0
-    text_font_rect.y = 0
-    text_font_rect.width = font_text.get_width() + 4
-    text_font_rect.height = font_text.get_height() + 4
-
-    # close button image
-    close_rect = close.get_rect()
-    close_rect.x = CLOSE_BUTTON_X
-    close_rect.y = CLOSE_BUTTON_Y
+    text_font_button.x = 0
+    text_font_button.y = 0
+    text_font_button.rect.width = font_text.get_width() + 4
+    text_font_button.rect.height = font_text.get_height() + 4
 
     # first blank the screen to make sure we don't have any stray artifacts
     screen.blit(background, (0,0))
     
-    pygame.draw.rect(screen, colors['button_blue'], am_pm_rect)
-    pygame.draw.rect(screen, current_color, text_color_rect)
-    pygame.draw.rect(screen, colors['button_blue'], text_font_rect)
-
-    # blit all the buttons and the text
-    screen.blit(up, up_hour_rect)
-    screen.blit(up, up_minute_rect)
-    screen.blit(down, down_hour_rect)
-    screen.blit(down, down_minute_rect)
-    screen.blit(close, close_rect)
+    am_pm_button.update(screen, colors['button_blue'])
+    text_color_button.update(screen, current_color)
+    text_font_button.update(screen, colors['button_blue'])
+   
+    up_hour_button.update(screen)
+    up_minute_button.update(screen)
+    down_hour_button.update(screen)
+    down_minute_button.update(screen)
+    close_button.update(screen)
     screen.blit(hour_text, hour_loc)
     screen.blit(minute_text, minute_loc)
     screen.blit(am_pm_text, am_pm_loc)
@@ -427,16 +394,23 @@ def main():
     # get the current clock ticks
     last_ticks = pygame.time.get_ticks()
     last_ticks_web_call = pygame.time.get_ticks()
-    
+
+    settings_button = Button(SETTINGS, 0, 0)
+    up_hour_button = Button(UP, 0, 0)
+    up_minute_button = Button(UP, 0, 0)
+    down_hour_button = Button(DOWN, 0, 0)
+    down_minute_button = Button(DOWN, 0, 0)
+    close_button = Button(CLOSE, SCREEN_WIDTH - CLOSE.get_width(), SCREEN_HEIGHT - CLOSE.get_height())
+    am_pm_button = Button(None, 0, 0, am_pm_rect, current_color)
+    text_color_button = Button(None, 0, 0, text_color_rect, current_color)
+    text_font_button = Button(None, 0, 0, text_font_rect, current_color)
+
     # main loop
     while 1:
         # load the text font
         TEXT_FONT = pygame.font.SysFont(app_settings.current_font, app_settings.primary_font_size)
         SECONDARY_TEXT_FONT = pygame.font.SysFont(app_settings.current_font, app_settings.secondary_font_size)
-        
-        test_image = Button(SETTINGS, 100, 100)
-        test_image.update()
-        
+
         # event loop
         for event in pygame.event.get():
             # check for quit events (close windows)
@@ -454,30 +428,30 @@ def main():
             # the other event we are looking for is mouse clicks
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # get the mouse position x and y values
-                x, y = event.pos                
+                x, y = event.pos
 
                 # only check these events if we are on the settings screen (these buttons don't exist on the main window)
                 if app_settings.show_settings:
-                    if up_hour_rect.collidepoint(x,y):
+                    if up_hour_button.collides_with(x,y):
                         increase_hour()
-                    if down_hour_rect.collidepoint(x,y):
+                    if down_hour_button.collides_with(x,y):
                         decrease_hour()
-                    if up_minute_rect.collidepoint(x,y):
+                    if up_minute_button.collides_with(x,y):
                         increase_minute()
-                    if down_minute_rect.collidepoint(x,y):
+                    if down_minute_button.collides_with(x,y):
                         decrease_minute()
-                    if close_rect.collidepoint(x,y):
+                    if close_button.collides_with(x,y):
                         app_settings.show_settings = False     
-                    if am_pm_rect.collidepoint(x,y):
+                    if am_pm_button.collides_with(x,y):
                         change_am_pm()
-                    if text_color_rect.collidepoint(x,y):
+                    if text_color_button.collides_with(x,y):
                         rotate_current_color()
-                    if text_font_rect.collidepoint(x,y):
+                    if text_font_button.collides_with(x,y):
                         rotate_current_font()
                         
                 # if the user clicked the settings button, set show settings to true, this will update the screen to 
                 #  show the settings window
-                if SETTINGS.get_rect().collidepoint(x,y):
+                if settings_button.collides_with(x,y): #SETTINGS.get_rect().collidepoint(x,y):
                     app_settings.show_settings = True
                 
                 
@@ -491,15 +465,15 @@ def main():
                 dt = get_time()
                 print('Done getting the time')
             
-            displayClock(TEXT_FONT, screen, background, SETTINGS, blink, dt)
+            displayClock(TEXT_FONT, screen, background, settings_button, blink, dt)
         else:
-            display_settings(background, screen, TEXT_FONT, SECONDARY_TEXT_FONT, UP, DOWN, CLOSE)
+            display_settings(background, screen, TEXT_FONT, SECONDARY_TEXT_FONT, up_hour_button, up_minute_button, down_hour_button, down_minute_button, close_button, am_pm_button, text_color_button, text_font_button) # UP, DOWN, CLOSE)
 
         # using the clock ticks to determine how fast to blink the colon
         if pygame.time.get_ticks() - last_ticks > 700:
             blink = not blink
             last_ticks = pygame.time.get_ticks()
-    
+
         time.sleep(0.05)
 
 # main function
