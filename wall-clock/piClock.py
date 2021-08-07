@@ -19,6 +19,7 @@
 import datetime, pygame, sys, datetime, time, requests, os, logging
 from pygame.locals import *
 from ClockSettings import ClockSettings
+from Button import Button
 
 logging.basicConfig(
         format='%(asctime)s %(levelname)-8s %(message)s',
@@ -432,6 +433,9 @@ def main():
         # load the text font
         TEXT_FONT = pygame.font.SysFont(app_settings.current_font, app_settings.primary_font_size)
         SECONDARY_TEXT_FONT = pygame.font.SysFont(app_settings.current_font, app_settings.secondary_font_size)
+        
+        test_image = Button(SETTINGS, 100, 100)
+        test_image.update()
         
         # event loop
         for event in pygame.event.get():
