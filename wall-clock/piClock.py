@@ -49,17 +49,6 @@ app_settings = ClockSettings()
 # set the current time, this is used to make the drawing more efficient
 current_time = get_time()
 
-# Making these rectangles global so config "screens" can be updated in a function
-#  while allowing the mail loop to check for collisions (aka 'click events') directly
-up_hour_rect = pygame.Rect(0,0,0,0)
-up_minute_rect = pygame.Rect(0,0,0,0)
-down_hour_rect = pygame.Rect(0,0,0,0)
-down_minute_rect = pygame.Rect(0,0,0,0)
-close_rect = pygame.Rect(0,0,0,0)
-am_pm_rect = pygame.Rect(0,0,0,0)
-text_color_rect = pygame.Rect(0,0,0,0)
-text_font_rect = pygame.Rect(0,0,0,0)
-
 # constants
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 480
